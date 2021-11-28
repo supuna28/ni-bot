@@ -21,6 +21,7 @@ const CFonts  = require('cfonts')
 const { Sticker, createSticker, StickerTypes } = require('wa-sticker-formatter')
 const { color, log } = require('console-log-colors');
 const { red, green, cyan } = color;
+const db = require('./database/database.json')
 
 
 const { help } = require('./database/menu/help')
@@ -84,6 +85,7 @@ const { saveState, state } = useSingleFileAuthState('./database/auth.json');
 
 
         client.ev.on('messages.upsert', async m => {
+            
             try {
                 const msg = m.messages[0]
                 if (!msg.message) return
