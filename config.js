@@ -1,0 +1,1 @@
+global.packname = 'NBMD - V1'
