@@ -23,11 +23,6 @@ const { color, log } = require('console-log-colors');
 const { red, green, cyan } = color;
 const db = require('./database/database.json')
 
-
-const { help } = require('./database/menu/help')
-const { criador } = require('./database/menu/criador')
-const { faq } = require('./database/menu/faq')
-const { pix_txt } = require('./database/menu/pix')
 const option = JSON.parse(fs.readFileSync('./options/option.json'))
 
 const footerText = 'Ni-Bot - Nify Tech'
