@@ -126,7 +126,7 @@ const { saveState, state } = useSingleFileAuthState('./database/auth.json');
 
                     const sticker = new Sticker(buffer, {
                         pack: 'Ni-Bot', // The pack name
-                        author: 'Me', // The author name
+                        author: 'Nify Tech', // The author name
                         type: StickerTypes.FULL, // The sticker type
                         categories: ['🤩', '🎉'], // The sticker category
                         id: '12345', // The sticker id
@@ -141,7 +141,7 @@ const { saveState, state } = useSingleFileAuthState('./database/auth.json');
                 }
                 
                 const reply = (mensagem) => {
-                    client.sendMessage(from, { text: mensagem });
+                    client.sendMessage(from, { text: mensagem }, {quoted: msg});
                 }
                 if(command){
                     cmdLog(command, msg.key.remoteJid)
@@ -188,22 +188,62 @@ _Suporte_
                                 reply('_Envie na legenda de uma imagem._');
                                 return;
                             }
-                            const stream = await downloadContentFromMessage(msg.message.imageMessage, 'image')
-                            let buffer = Buffer.from([])
-                            for await(const chunk of stream) {
-                                buffer = Buffer.concat([buffer, chunk])
-                            }
-                            let sticker = makeSticker(buffer);
-                            client.sendMessage(from, await sticker.toMessage())
-                            break
-						case 'nextpage':
-				
-							
-							break
-						
-						case 'info':
+                            if(type.includes('imageMessage')){
+                                const stream = await downloadContentFromMessage(msg.message.imageMessage, 'image')
+                                let buffer = Buffer.from([])
+                                for await(const chunk of stream) {
+                                    buffer = Buffer.concat([buffer, chunk])
+                                }
+                                let sticker = makeSticker(buffer);
+                                client.sendMessage(from, await sticker.toMessage())
+                            } else if (type.includes('videoMessage')){
 
-							
+                            }
+                            
+                            
+                            break
+                        case 'args':
+                            reply(args)
+                            break
+						case 'ats':
+                            if(!args) {
+                                reply('Qual o texto?')
+                                return 
+                            }
+                            let arg = args.toString()
+                            let text = arg.replaceAll(',', ' ')
+                            try {
+                                axios.get(`https://api.xteam.xyz/attp?file&text=${encodeURIComponent(text)}`, {responseType: 'arraybuffer'}).then(res => {
+                                //let ats = makeSticker(res.data)
+                                fs.writeFileSync(`${args}.png`, res.data)
+                                //client.sendMessage(from, await ats.toMessage())
+                                reply(text)
+                                reply(args)
+                                client.sendMessage(from, { sticker: (res.data), mimetype: 'image/webp' }, { quoted: msg })
+                                })
+
+                            } catch (err) {
+                                console.log(err)
+                                throw(err);
+                            }
+							break
+						case 'ts':
+                            if(!args) {
+                                reply('Qual o texto?')
+                                return 
+                            }
+                            try {
+                                axios.get(`https://api.xteam.xyz/ttp?file&text=${encodeURIComponent(args)}`, {responseType: 'arraybuffer'}).then(res => {
+                                //let ats = makeSticker(res.data)
+                                //fs.writeFileSync('a.png', res.data)
+                                //client.sendMessage(from, await ats.toMessage())
+                                client.sendMessage(from, { sticker: (res.data), mimetype: 'image/webp' }, { quoted: msg })
+                                })
+
+                            } catch (err) {
+                                console.log(err)
+                                throw(err);
+                            }
 							break
 						
 						case 'faq':

@@ -32,6 +32,8 @@ ${readMore}
 
 ┌─【 Stickers 】
 │↣ !f (legenda)
+│↣ !ts (texto)
+│↣ !ats (texto)
 └────
 
 ┌─【 Hentai & Porn 】
