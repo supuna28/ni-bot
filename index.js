@@ -9,7 +9,9 @@ const {
     MessageOptions,
     Mimetype,
     DisconnectReason,
-    downloadContentFromMessage
+    downloadContentFromMessage,
+    generateWAMessageFromContent,
+    proto
 } = require('@adiwajshing/baileys-md')
 var pino = require("pino");
 var baileys = require("@adiwajshing/baileys-md");
@@ -19,9 +21,11 @@ const moment = require('moment-timezone')
 const chalk = require('chalk')
 const CFonts  = require('cfonts')
 const { Sticker, createSticker, StickerTypes } = require('wa-sticker-formatter')
+const WSF = require('wa-sticker-tew')
 const { color, log } = require('console-log-colors');
 const { red, green, cyan } = color;
 const db = require('./database/database.json')
+//const { sticker } = require('./lib/sticker2')
 
 const option = JSON.parse(fs.readFileSync('./options/option.json'))
 
@@ -33,6 +37,8 @@ const {
     ownerNumber
 } = option
 
+const packname = 'Ni-Bot';
+const author = 'Nify Tech';
 function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -122,29 +128,59 @@ const { saveState, state } = useSingleFileAuthState('./database/auth.json');
                         return id;
                     }
                 }
-                function makeSticker(buffer){
-
+                function makeSticker(buffer, animated, category){
+                    let quality = false
+                    let stype = StickerTypes.DEFAULT
+                    let back = ''
+                    let categ = ''
+                    if(animated === true){
+                        quality = 10
+                        stype = StickerTypes.CROPPED
+                        
+                    } else if (animated === false){
+                        quality = 50
+                        stype = StickerTypes.FULL
+                    
+                    }
+                    if(category === 'feliz'){
+                        categ = '😀'
+                    } else if(category === 'amor'){
+                        categ = '😍'
+                    } else if(category === 'triste'){
+                        categ = '😣'
+                    } else if(category === 'nervoso'){
+                        categ = '😡'
+                    } else if (category === 'saudar'){
+                        categ = '👋'
+                    } else if (category === 'celebrar'){
+                        categ = '🎊'
+                    }
                     const sticker = new Sticker(buffer, {
-                        pack: 'Ni-Bot', // The pack name
-                        author: 'Nify Tech', // The author name
-                        type: StickerTypes.FULL, // The sticker type
-                        categories: ['🤩', '🎉'], // The sticker category
+
+                        
+                        pack: packname, // The pack name
+                        author: author, // The author name
+                        type: stype, // The sticker type
+                        //categories: [`${categ}`], // The sticker category
                         id: '12345', // The sticker id
-                        quality: 50, // The quality of the output file
-                       // background: '#000000' // The sticker background color (only for full stickers)
+                        quality: quality, // The quality of the output file
+                        //background: back // The sticker background color (only for full stickers)
                     })
 
                     return sticker;
                 }
-                function cmdLog(cmd, chatId){
+                function cmdLog(cmd, chatId, args){
+                    console.log('------------------------------')
                     log.magenta('Comando recebido:', color.white(cmd), color.magenta('ChatID:'), color.white(chatId));
+                    log.magenta('Args:', color.white(args))
+                    console.log('------------------------------')
                 }
                 
                 const reply = (mensagem) => {
                     client.sendMessage(from, { text: mensagem }, {quoted: msg});
                 }
                 if(command){
-                    cmdLog(command, msg.key.remoteJid)
+                    cmdLog(command, msg.key.remoteJid, args)
                     
                 }
 				
@@ -153,7 +189,7 @@ const { saveState, state } = useSingleFileAuthState('./database/auth.json');
                         case 'menu':
                             const { menu } = require('./database/menu/commands')
                             let id = getNumber(msg.key)
-                           
+                           /*
                             const buttons = [
                                 {buttonId: '!suporte', buttonText: {displayText: 'Suporte'}, type: 1},
                               ]
@@ -164,9 +200,24 @@ const { saveState, state } = useSingleFileAuthState('./database/auth.json');
                                   buttons: buttons,
                                   headerType: 1
                               }
+👨‍💻
+                              */
+                              const templateButtons = [
+                                {index: 1, urlButton: {displayText: 'Suporte 👨‍💻', url: 'https://wa.me/558381465775'}},
+                                //{index: 2, callButton: {displayText: 'Call me!', phoneNumber: '+1 (234) 5678-901'}},
+                                //{index: 3, quickReplyButton: {displayText: 'This is a reply, just like normal buttons!', id: 'id-like-buttons-message'}},
+                              ]
+                              
+                              const templateMessage = {
+                                  text: menu(id, botName),
+                                  footer: 'Nify Tech',
+                                  templateButtons: templateButtons
+                              }
+                              
+                              const sendMsg = await client.sendMessage(from, templateMessage)
                             
                             
-                            client.sendMessage(from, buttonMessage)
+                           /// client.sendMessage(from, buttonMessage)
 
                             break
                         case 'suporte':
@@ -188,16 +239,25 @@ _Suporte_
                                 reply('_Envie na legenda de uma imagem._');
                                 return;
                             }
+                            let category = args
+                            reply(args)
+
                             if(type.includes('imageMessage')){
                                 const stream = await downloadContentFromMessage(msg.message.imageMessage, 'image')
                                 let buffer = Buffer.from([])
                                 for await(const chunk of stream) {
                                     buffer = Buffer.concat([buffer, chunk])
                                 }
-                                let sticker = makeSticker(buffer);
+                                let sticker = makeSticker(buffer, false, category);
                                 client.sendMessage(from, await sticker.toMessage())
                             } else if (type.includes('videoMessage')){
-
+                                const stream = await downloadContentFromMessage(msg.message.videoMessage, 'video')
+                                let buffer = Buffer.from([])
+                                for await(const chunk of stream) {
+                                    buffer = Buffer.concat([buffer, chunk])
+                                }
+                                let sticker = makeSticker(buffer, true, category);
+                                client.sendMessage(from, await sticker.toMessage())
                             }
                             
                             
@@ -217,8 +277,7 @@ _Suporte_
                                 //let ats = makeSticker(res.data)
                                 fs.writeFileSync(`${args}.png`, res.data)
                                 //client.sendMessage(from, await ats.toMessage())
-                                reply(text)
-                                reply(args)
+                                
                                 client.sendMessage(from, { sticker: (res.data), mimetype: 'image/webp' }, { quoted: msg })
                                 })
 
@@ -246,12 +305,55 @@ _Suporte_
                             }
 							break
 						
-						case 'faq':
-				
-							
+						case 'hyd':
+                            const template = generateWAMessageFromContent(from, proto.Message.fromObject({
+                                templateMessage: {
+                                    hydratedTemplate: {
+                                        
+                                        hydratedContentText: '*Apenas um teste*\n\nteste\n\nteste',
+                                        hydratedButtons: [{
+                                            urlButton: {
+                                                displayText: 'Link',
+                                                url: 'https://wa.me/5511973584242'
+                                            }
+                                        }, {
+                                            callButton: {
+                                                displayText: 'Ligar',
+                                                phoneNumber: '+55 11 973584242'
+                                            }
+                                        },
+                                        {
+                                            quickReplyButton: {
+                                                displayText: 'Btn 1',
+                                                id: 'id1'
+                                            }
+                                        },
+                                        {
+                                            quickReplyButton: {
+                                                displayText: 'Btn 2',
+                                                id: 'id2'
+                                            }
+                                        },
+                                        { 
+                                            quickReplyButton: {
+                                                displayText: 'Btn 3',
+                                                id: 'id3'
+                                            }  
+                                        }]
+                                    }
+                                }
+                            }), { userJid: from || from, quoted: msg });
+                            return await client.relayMessage(
+                                from,
+                                template.message,
+                                { messageId: template.key.id }
+                            )
+
 							break
 						
-						case 'doação':
+						case 'teste':
+                            reply('Teste atual: sticker animado.')
+
 					
 							
 							break
